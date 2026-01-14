@@ -1,0 +1,25 @@
+# Compiled output
+dist/
+out/
+*.vsix
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
