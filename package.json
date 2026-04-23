@@ -2,7 +2,7 @@
   "name": "inertia-backend-jump",
   "displayName": "Inertia Backend Jump",
   "description": "Navigate from Vue action strings to Laravel controller methods in Inertia.js projects with intelligent component path matching and filtered search",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "publisher": "kaizo-nakagawa",
   "icon": "icon.png",
   "repository": {
@@ -26,7 +26,7 @@
     "Other"
   ],
   "activationEvents": [
-    "*"
+    "onLanguage:vue"
   ],
   "main": "./dist/extension.js",
   "contributes": {},

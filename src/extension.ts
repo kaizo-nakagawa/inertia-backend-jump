@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const hoverProvider: vscode.HoverProvider = {
         provideHover(document, position) {
-            const range = document.getWordRangeAtPosition(position, /'[^']+'/);
+            const range = document.getWordRangeAtPosition(position, /'[^']+/);
             if (!range) return;
 
             const word = document.getText(range).replace(/'/g, '');
@@ -85,27 +85,79 @@ function findActionInControllers(dir: string, action: string, componentPath: str
 
     for (const file of files) {
         const content = fs.readFileSync(file, 'utf8');
-        
-        // First filter: Check if method contains 'return $this->responser'
+
+        // First filter: Check if file contains 'return $this->responser'
         if (!content.includes('return $this->responser')) {
             continue;
         }
 
-        // Second filter: Check if it has the matching component path
-        const componentPattern = new RegExp(`\\$ctx->component\\s*=\\s*fn\\s*\\(\\)\\s*=>\\s*['"]${componentPath.replace(/\//g, '\\/')}['"]`);
-        if (!componentPattern.test(content)) {
-            continue;
-        }
-
-        // Now find the specific action line
         const lines = content.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes(`$ctx->${action}`)) {
-                return { file, line: i };
+        const componentPattern = new RegExp(`\\$ctx->component\\s*=\\s*fn\\s*\\(\\)\\s*=>\\s*['"]${componentPath.replace(/\//g, '\\/')}"]`);
+
+        // Find all method boundaries
+        const methods = findMethodBoundaries(lines);
+
+        // For each method, check if it contains both the action and the matching component
+        for (const method of methods) {
+            const methodContent = lines.slice(method.start, method.end + 1).join('\n');
+
+            // Check if method contains the action
+            if (!methodContent.includes(`$ctx->${action}`)) {
+                continue;
+            }
+
+            // Check if method contains the matching component
+            if (!componentPattern.test(methodContent)) {
+                continue;
+            }
+
+            // Find the specific action line within this method
+            for (let i = method.start; i <= method.end; i++) {
+                if (lines[i].includes(`$ctx->${action}`)) {
+                    return { file, line: i };
+                }
             }
         }
     }
     return null;
+}
+
+function findMethodBoundaries(lines: string[]): { start: number, end: number }[] {
+    const methods: { start: number, end: number }[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Check if this is a method definition
+        if (line.match(/\b(public|protected|private)?\s*function\s+\w+/)) {
+            let braceCount = 0;
+            let foundStart = false;
+            let endLine = i;
+
+            // Find the method end by counting braces
+            for (let j = i; j < lines.length; j++) {
+                for (const char of lines[j]) {
+                    if (char === '{') {
+                        braceCount++;
+                        foundStart = true;
+                    } else if (char === '}') {
+                        braceCount--;
+                        if (foundStart && braceCount === 0) {
+                            endLine = j;
+                            break;
+                        }
+                    }
+                }
+                if (foundStart && braceCount === 0) {
+                    break;
+                }
+            }
+
+            methods.push({ start: i, end: endLine });
+        }
+    }
+
+    return methods;
 }
 
 function walk(dir: string): string[] {
